@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "taroify": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@taroify/mcp",
+      ],
+      "env": {}
+    }
+  }
+}
