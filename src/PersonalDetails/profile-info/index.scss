@@ -40,7 +40,7 @@
         right: 0;
         width: 8vw; /* 24px -> 8vw, 增大 */
         height: 8vw;
-        background: #ffd21e;
+        background: #f7e49c;
         border: 0.5vw solid #fff;
         border-radius: 50%;
         display: flex;
@@ -53,10 +53,11 @@
       background: rgb(255 255 255 / 20%);
       padding: 1vh 6vw;
       border-radius: 5vw;
-      color: #fff;
+      color: #000;
       font-size: 30px; /* 16px -> 18px, 增大 */
-      font-weight: 500;
+      font-weight: 520;
       border: 1px solid rgb(255 255 255 / 40%);
+      word-break: break-all;
     }
   }
 }
@@ -70,6 +71,7 @@
   z-index: 1;
   padding: 1.5vh 0;
   box-shadow: 0 1vh 3vw rgb(0 0 0 / 5%);
+  word-break: break-all;
 
   .taroify-cell {
     padding: 2.2vh 5vw; /* 增大单元格高度 */

@@ -73,17 +73,6 @@
     width: 100%;
 
     .nickname-box {
-      font-size: 18px;
-      font-weight: bold;
-      padding: 10px 40px;
-      border-radius: 20px;
-      padding-top: 40px;
-      z-index: -1;
-      width: 80%;
-      text-align: center;
-    }
-
-    .nickname-box {
       /* Reset styles for cleaner structure */
       margin: 0;
       z-index: auto;
@@ -95,8 +84,8 @@
       min-width: 30vw;
       max-width: 60vw;
       height: auto;
-      text-align: center;
       border-radius: 4vw;
+      word-break: break-all;
 
       // 覆盖 Taroify Cell 默认样式
       &.taroify-cell {
@@ -111,6 +100,7 @@
         color: #000;
         font-weight: bold;
         justify-content: center;
+        text-align: center;
       }
     }
 
@@ -123,7 +113,7 @@
 
       .status-item {
         font-size: 30px;
-        color: #f80;
+        color: rgb(255 51 0);
         display: flex;
         align-items: center;
         gap: 1.5vw; /* 使用 vw 替代 px */

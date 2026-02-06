@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package api.user;
+
+// 用户信息模型
+message User {
+  // [Authorize::Admin && Authorize::User]
+  optional string token = 1;
+  optional string nickname = 2;
+  optional string name = 3;
+  optional string phone_number = 4;
+  optional string address = 5;
+  optional string community = 6;
+  // [Authorize::Admin]
+  optional string is_important = 7;
+  optional string avatar = 8;
+  optional string permission = 9;
+}
+
+// 用户相关的通用响应
+message UserResponse {
+  optional User user = 1;
+  int32 code = 2;
+  string message = 3;
+}
+
+// 修改用户信息请求
+message UserRequest {
+  // [Authorize::Admin && Authorize::User]
+  optional string target_openid = 10;
+  optional string nickname = 2;
+  optional string name = 3;
+  optional string phone_number = 4;
+  optional string address = 5;
+  // optional string community = 6;
+  // [Authorize::Admin]
+  optional string is_important = 7;
+  optional string avatar = 8;
+}
+
+message ApplyPermission {
+  string code = 1;
+  int32 apply_type = 2;
+  int64 expire_time = 3;
+}
+
+message ApplyPermissionResponse {
+  optional ApplyPermission apply_permission = 1;
+  int32 code = 2;
+  string message = 3;
+}

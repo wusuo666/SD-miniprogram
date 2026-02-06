@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package api.community_service;
+
+message CommunityService {
+  int32 id = 1;
+  string name = 2;
+  string address = 3;
+  string phone = 4;
+  float latitude = 5;
+  float longitude = 6;
+  int64 create_time = 7;
+}
+
+// Response for community service operations
+message CommunityServiceResponse {
+  repeated CommunityService community_services = 1;
+  int32 code = 2;
+  string message = 3;
+}
