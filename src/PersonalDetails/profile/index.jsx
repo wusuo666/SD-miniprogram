@@ -1,4 +1,4 @@
-import { View, Text } from "@tarojs/components";
+import { View } from "@tarojs/components";
 import {
   Cell,
   Button,
@@ -12,23 +12,52 @@ import {
   User,
   Scan,
   InfoOutlined,
-  UnderwayOutlined,
-  LocationOutlined,
   ContactOutlined,
-  Close,
   ShareOutlined,
 } from "@taroify/icons";
 import Taro, { useLoad } from "@tarojs/taro";
 import { useState } from "react";
 import "./index.scss";
+import { performWechatLogin } from "../../api/user.js";
+import { useUser } from "../../context/UserContext";
+import AuthAvatar from "../../components/AuthAvatar";
+import qrCodeImg from "../../static/QR_code.jpg";
 
 export default function Profile() {
+  const { userInfo, isLogged, login, logout } = useUser();
   const [open, setOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
 
   useLoad(() => {
     console.log("Profile Page loaded.");
   });
+
+  const handleLogout = () => {
+    Taro.showModal({
+      title: "提示",
+      content: "确定要退出登录吗？",
+      success: function (res) {
+        if (res.confirm) {
+          logout();
+          Taro.showToast({ title: "已退出", icon: "none" });
+        }
+      },
+    });
+  };
+
+  const handleLogin = async () => {
+    if (isLogged) return;
+    Taro.showLoading({ title: "登录中..." });
+    try {
+      const user = await performWechatLogin();
+      login(user);
+      console.log("登录成功", user);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      Taro.hideLoading();
+    }
+  };
 
   return (
     <View className="profile-page">
@@ -68,7 +97,7 @@ export default function Profile() {
             }}
           >
             <Image
-              src="https://img.yzcdn.cn/vant/cat.jpeg"
+              src={qrCodeImg}
               showMenuByLongpress
               style={{
                 width: "100%",
@@ -90,38 +119,38 @@ export default function Profile() {
       {/* 用户卡片 */}
       <View className="user-card">
         <View className="avatar-container">
-          <Image
-            round
+          <AuthAvatar
+            uuid={isLogged ? userInfo?.avatar : null}
             className="avatar"
-            src="https://img.yzcdn.cn/vant/cat.jpeg"
+            shape="circle"
           />
         </View>
 
         <Flex direction="column" align="center" className="user-info">
           <Cell className="nickname-box" clickable center={false}>
-            未登录
+            {isLogged ? userInfo?.nickname || "微信用户" : "未登录"}
           </Cell>
-
+          {/* 
           <Flex direction="column" align="center" className="status-row">
-            <Flex align="center" className="status-item">
-              <UnderwayOutlined />
-              <Text className="label">注册时间: </Text>
-              <Text className="value">未登录</Text>
-            </Flex>
             <Flex align="center" className="status-item">
               <LocationOutlined />
               <Text className="label">社区: </Text>
-              <Text className="value">上地街道</Text>
+              {isLogged ? (
+                <Text className="value">上地街道</Text>
+              ) : (
+                <Text className="value">未登录</Text>
+              )}
             </Flex>
-          </Flex>
-          <Tag color="warning" shape="rounded" size="large">
-            <Close />
-            未登录
-          </Tag>
-          {/* <Tag color="warning" shape="rounded" size="large">
-             <Passed />
+          </Flex> */}
+          {isLogged ? (
+            <Tag color="success" shape="rounded" size="large">
               已登录
-          </Tag> */}
+            </Tag>
+          ) : (
+            <Tag color="warning" shape="rounded" size="large">
+              未登录
+            </Tag>
+          )}
         </Flex>
       </View>
 
@@ -169,20 +198,36 @@ export default function Profile() {
         />
       </View>
 
-      {/* 底部登录按钮 */}
+      {/* 底部登录/退出按钮 */}
       <View className="footer-action">
-        <Button
-          shape="round"
-          block
-          style={{
-            background: "linear-gradient(to right, #ff6034, #ee0a24)",
-            color: "#fff",
-            border: "none",
-          }}
-        >
-          <User size={30} style={{ marginRight: 8 }} />
-          点击登录
-        </Button>
+        {isLogged ? (
+          <Button
+            shape="round"
+            block
+            style={{
+              background: "#ffffff",
+              color: "#ee0a24",
+              border: "1px solid #ee0a24",
+            }}
+            onClick={handleLogout}
+          >
+            退出登录
+          </Button>
+        ) : (
+          <Button
+            shape="round"
+            block
+            style={{
+              background: "linear-gradient(to right, #ff6034, #ee0a24)",
+              color: "#fff",
+              border: "none",
+            }}
+            onClick={handleLogin}
+          >
+            <User size={30} style={{ marginRight: 8 }} />
+            点击登录
+          </Button>
+        )}
       </View>
     </View>
   );

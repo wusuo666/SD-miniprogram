@@ -2,43 +2,43 @@ import { View, Text } from "@tarojs/components";
 import { Button, Flex } from "@taroify/core";
 import { Phone, Location, ArrowLeft, HomeOutlined } from "@taroify/icons";
 import Taro from "@tarojs/taro";
+import { useState, useEffect } from "react";
+import { getCommunityServices } from "../../api/community_service";
 import "./index.scss";
 
 export default function ContactCommunity() {
-  const communityList = [
-    {
-      id: 1,
-      name: "上地东里第一社区",
-      address: "海淀区上地东里四区7号楼102",
-      phone: "62986360",
-      lat: 40.032123,
-      lng: 116.319766,
-    },
-    {
-      id: 2,
-      name: "上地东里第二社区",
-      address: "海淀区上地街道上地东里七区四号楼一层",
-      phone: "62982695",
-      lat: 40.0331,
-      lng: 116.3208,
-    },
-    {
-      id: 3,
-      name: "上地西里社区",
-      address: "上地西里社区颂芳园4号楼611",
-      phone: "62963909",
-      lat: 40.0345,
-      lng: 116.315,
-    },
-    {
-      id: 4,
-      name: "东馨园社区",
-      address: "海淀上地东馨园社区12号楼底商东馨园居委会",
-      phone: "82708058",
-      lat: 40.036,
-      lng: 116.325,
-    },
-  ];
+  const [communityList, setCommunityList] = useState([]);
+
+  useEffect(() => {
+    const fetchList = async () => {
+      Taro.showLoading({ title: "加载中..." });
+      try {
+        const res = await getCommunityServices();
+        if (res.code === 200 && res.communityServices) {
+          // 将后端数据映射为前端展示需要的格式
+          const list = res.communityServices.map((item) => ({
+            id: item.id,
+            name: item.name,
+            address: item.address,
+            phone: item.phone,
+            lat: item.latitude, // 对应 proto 定义的 latitude
+            lng: item.longitude, // 对应 proto 定义的 longitude
+          }));
+          setCommunityList(list);
+        }
+      } catch (error) {
+        console.error("Fetch community services failed", error);
+        // 401 已由全局处理，这里处理其他错误
+        if (error?.code !== 401) {
+          Taro.showToast({ title: "获取列表失败", icon: "none" });
+        }
+      } finally {
+        Taro.hideLoading();
+      }
+    };
+
+    fetchList();
+  }, []);
 
   const handleBack = () => {
     Taro.navigateBack();
