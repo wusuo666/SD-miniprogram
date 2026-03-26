@@ -7,6 +7,7 @@ import {
   ShieldOutlined,
 } from "@taroify/icons";
 import Taro from "@tarojs/taro";
+import logo from "../../static/logo.webp";
 import "./index.scss";
 
 export default function About() {
@@ -20,7 +21,7 @@ export default function About() {
       <View className="header-section">
         <Flex direction="column" align="center" className="app-display">
           <View className="logo-wrapper">
-            <Image className="logo" src="https://img.yzcdn.cn/vant/cat.jpeg" />
+            <Image className="logo" src={logo} />
           </View>
           <View className="app-name">上地小e养老</View>
           <View className="version-tag">

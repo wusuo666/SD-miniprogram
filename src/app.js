@@ -1,4 +1,5 @@
 import { useLaunch } from "@tarojs/taro";
+import { UserProvider } from "./context/UserContext";
 
 import "./app.scss";
 
@@ -8,7 +9,8 @@ function App({ children }) {
   });
 
   // children 是将要会渲染的页面
-  return children;
+  // 使用 UserProvider 包裹应用
+  return <UserProvider>{children}</UserProvider>;
 }
 
 export default App;

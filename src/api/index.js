@@ -8,3 +8,5 @@ export * from "./policyRegulation";
 export * from "./request";
 export * from "./serviceMap";
 export * from "./warmTip";
+export * from "./serviceMap";
+export * from "./user";
