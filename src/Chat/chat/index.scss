@@ -304,6 +304,38 @@ $tip-text: #999;
   line-height: 1.6;
   overflow-wrap: break-word;
 
+  // 基础字体大小，与流式消息保持一致（28px = font-normal）
+  font-size: 28px;
+
+  // 确保普通文本元素继承字体大小
+  p,
+  ul,
+  ol,
+  li,
+  pre,
+  code {
+    font-size: inherit;
+  }
+
+  // 标题保持相对大小（相对于父级的倍数）
+  h1 {
+    font-size: 1.5em;
+  }
+
+  h2 {
+    font-size: 1.3em;
+  }
+
+  h3 {
+    font-size: 1.15em;
+  }
+
+  h4,
+  h5,
+  h6 {
+    font-size: 1em;
+  }
+
   p,
   ul,
   ol,
@@ -366,15 +398,15 @@ $tip-text: #999;
   }
 
   &.font-small {
-    font-size: 24px;
-  }
-
-  &.font-normal {
     font-size: 28px;
   }
 
+  &.font-normal {
+    font-size: 32px;
+  }
+
   &.font-large {
-    font-size: 34px;
+    font-size: 38px;
   }
 }
 
