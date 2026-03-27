@@ -265,7 +265,9 @@ export const generateSmartTitle = async (userContent, assistantContent) => {
         title = res.data.output.choices[0].message.content;
       }
 
-      return title.trim() || generateChatTitle(userContent);
+      // 去除可能存在的引号（中英文单双引号、反引号）
+      const cleanTitle = title.trim().replace(/^[""''``]+|[""''``]+$/g, "");
+      return cleanTitle || generateChatTitle(userContent);
     }
   } catch (err) {
     console.error("智能标题生成失败:", err);
