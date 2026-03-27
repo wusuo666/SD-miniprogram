@@ -68,7 +68,7 @@ $tip-text: #999;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 400px;
+  max-width: 280px;
 }
 
 .toolbar-subtitle {
@@ -80,7 +80,8 @@ $tip-text: #999;
 .toolbar-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .toolbar-btn {
@@ -295,6 +296,85 @@ $tip-text: #999;
 
   .message-text {
     color: $ai-message-text;
+  }
+}
+
+.message-markdown {
+  color: $ai-message-text;
+  line-height: 1.6;
+  overflow-wrap: break-word;
+
+  p,
+  ul,
+  ol,
+  pre,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin: 0 0 16px;
+  }
+
+  p:last-child,
+  ul:last-child,
+  ol:last-child,
+  pre:last-child,
+  h1:last-child,
+  h2:last-child,
+  h3:last-child,
+  h4:last-child,
+  h5:last-child,
+  h6:last-child {
+    margin-bottom: 0;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 600;
+  }
+
+  ul,
+  ol {
+    padding-left: 24px;
+  }
+
+  a {
+    color: #1677ff;
+    text-decoration: underline;
+  }
+
+  .md-code-block {
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #fafafa;
+    border: 1px solid #f0f0f0;
+    overflow-x: auto;
+  }
+
+  .md-inline-code {
+    padding: 2px 6px;
+    margin: 0 2px;
+    background: #f5f5f5;
+    border: 1px solid #e8e8e8;
+    border-radius: 6px;
+  }
+
+  &.font-small {
+    font-size: 24px;
+  }
+
+  &.font-normal {
+    font-size: 28px;
+  }
+
+  &.font-large {
+    font-size: 34px;
   }
 }
 

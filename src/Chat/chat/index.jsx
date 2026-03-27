@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Taro, { useLoad } from "@tarojs/taro";
-import { View, Text, ScrollView, Textarea } from "@tarojs/components";
+import { View, Text, ScrollView, Textarea, RichText } from "@tarojs/components";
 import { Button } from "@taroify/core";
 import {
   Arrow,
@@ -9,6 +9,7 @@ import {
   FontOutlined,
   UserOutlined,
   ChatOutlined,
+  AddOutlined,
 } from "@taroify/icons";
 import {
   sendMessageStream,
@@ -26,6 +27,98 @@ import { BAILIAN_CONFIG } from "../config/bailian";
 import "./index.scss";
 
 const WELCOME_MESSAGE = "你好！我是上地街道 AI 助手，有什么可以帮助您的吗？";
+
+const escapeHtml = (text = "") =>
+  text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const renderInlineMarkdown = (line = "") => {
+  let html = escapeHtml(line);
+  html = html.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');
+  html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  html = html.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    '<a href="$2">$1</a>',
+  );
+  return html;
+};
+
+const renderMarkdownToHtml = (markdown = "") => {
+  const normalized = markdown.replace(/\r\n/g, "\n");
+  const lines = normalized.split("\n");
+  const blocks = [];
+  let inCode = false;
+  let codeLines = [];
+  let listItems = [];
+
+  const flushList = () => {
+    if (!listItems.length) return;
+    blocks.push(`<ul>${listItems.join("")}</ul>`);
+    listItems = [];
+  };
+
+  lines.forEach((rawLine) => {
+    const line = rawLine || "";
+
+    if (line.trim().startsWith("```")) {
+      flushList();
+      if (!inCode) {
+        inCode = true;
+        codeLines = [];
+      } else {
+        blocks.push(
+          `<pre class="md-code-block"><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`,
+        );
+        inCode = false;
+        codeLines = [];
+      }
+      return;
+    }
+
+    if (inCode) {
+      codeLines.push(line);
+      return;
+    }
+
+    const listMatch = line.match(/^\s*[-*+]\s+(.+)/);
+    if (listMatch) {
+      listItems.push(`<li>${renderInlineMarkdown(listMatch[1])}</li>`);
+      return;
+    }
+
+    flushList();
+
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+    if (headingMatch) {
+      const level = headingMatch[1].length;
+      blocks.push(
+        `<h${level}>${renderInlineMarkdown(headingMatch[2])}</h${level}>`,
+      );
+      return;
+    }
+
+    if (!line.trim()) {
+      blocks.push("<br />");
+      return;
+    }
+
+    blocks.push(`<p>${renderInlineMarkdown(line)}</p>`);
+  });
+
+  if (inCode && codeLines.length) {
+    blocks.push(
+      `<pre class="md-code-block"><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`,
+    );
+  }
+  flushList();
+
+  return blocks.join("");
+};
 
 export default function Chat() {
   const [chatId, setChatId] = useState("");
@@ -124,6 +217,22 @@ export default function Chat() {
     });
   };
 
+  const handleNewChat = () => {
+    console.log(
+      "[Chat] 开始新对话，当前chatId:",
+      chatId,
+      "当前标题:",
+      chatTitle,
+    );
+    initNewChat();
+    Taro.showToast({
+      title: "已创建新对话",
+      icon: "success",
+      duration: 1500,
+    });
+    console.log("[Chat] 新对话已创建");
+  };
+
   const handleStopGenerating = () => {
     isStreamActiveRef.current = false;
     textBufferRef.current = [];
@@ -184,18 +293,25 @@ export default function Chat() {
         user_message: userContent,
         ai_response: fullText,
       };
+      console.log("[Chat] 保存对话到后端，payload:", {
+        ...payload,
+        ai_response: fullText.substring(0, 50) + "...",
+      });
 
       const res = await saveChatMessage(payload);
+      console.log("[Chat] 后端保存结果:", res);
+
       if (
         res &&
         res.code === 200 &&
         res.session_id &&
         res.session_id !== chatId
       ) {
+        console.log("[Chat] 更新chatId:", chatId, "->", res.session_id);
         setChatId(res.session_id);
       }
     } catch (e) {
-      console.error("对话记录同步后端失败", e);
+      console.error("[Chat] 对话记录同步后端失败:", e);
     }
   };
 
@@ -326,6 +442,17 @@ export default function Chat() {
         content: msg.content,
       }));
 
+    console.log(
+      "[Chat] 发送消息时的chatId:",
+      chatId,
+      "是否历史会话:",
+      chatId.startsWith("session_"),
+    );
+    console.log("[Chat] 作为上下文的历史消息数:", history.length);
+    if (history.length > 0) {
+      console.log("[Chat] 历史消息最后一条:", history[history.length - 1]);
+    }
+
     abortFnRef.current = sendMessageStream(content, history, {
       onChunk: (chunk) => {
         if (chunk) textBufferRef.current.push(...chunk.split(""));
@@ -352,9 +479,22 @@ export default function Chat() {
   };
 
   const handleOpenHistory = async () => {
+    console.log("[Chat] ====== 点击历史记录按钮 ======");
+    console.log("[Chat] 当前chatId:", chatId, "当前标题:", chatTitle);
+
+    // 检查登录状态
+    const token = Taro.getStorageSync("token");
+    if (!token) {
+      console.warn("[Chat] 用户未登录，无法获取历史记录");
+      Taro.showToast({ title: "请先登录", icon: "none" });
+      return;
+    }
+
     try {
+      console.log("[Chat] 开始获取历史会话列表...");
       Taro.showLoading({ title: "加载历史中..." });
       const res = await getChatSessions(1, 20);
+      console.log("[Chat] 获取历史会话列表成功:", res);
       Taro.hideLoading();
 
       if (!res || res.code !== 200) {
@@ -369,12 +509,27 @@ export default function Chat() {
       }
 
       const itemList = sessions.map((s) => s.title || "未命名对话");
+      console.log(
+        "[Chat] 历史会话列表:",
+        sessions.map((s) => ({ id: s.session_id, title: s.title })),
+      );
+
       const pick = await Taro.showActionSheet({ itemList });
       const selected = sessions[pick.tapIndex];
-      if (!selected?.session_id) return;
+      console.log("[Chat] 用户选择历史记录:", selected);
+      console.log("[Chat] selected.sessionId:", selected?.sessionId);
+
+      // Protobuf 解码后是驼峰命名 sessionId
+      const selectedSessionId = selected?.sessionId || selected?.session_id;
+      if (!selectedSessionId) {
+        console.warn("[Chat] 选中的历史记录没有 session_id");
+        return;
+      }
 
       Taro.showLoading({ title: "加载对话中..." });
-      const detail = await getChatSessionDetail(selected.session_id);
+      console.log("[Chat] 开始获取对话详情, sessionId:", selectedSessionId);
+      const detail = await getChatSessionDetail(selectedSessionId);
+      console.log("[Chat] 获取对话详情成功:", detail);
       Taro.hideLoading();
 
       if (!detail || detail.code !== 200) {
@@ -385,15 +540,39 @@ export default function Chat() {
         return;
       }
 
+      // Protobuf 解码后的字段是驼峰命名
       const loadedMessages = (detail.messages || [])
         .map((msg) => [
-          { id: `usr_${msg.id}`, type: "user", content: msg.user_message },
-          { id: `ai_${msg.id}`, type: "ai", content: msg.ai_response },
+          {
+            id: `usr_${msg.id}`,
+            type: "user",
+            content: msg.userMessage || msg.user_message,
+          },
+          {
+            id: `ai_${msg.id}`,
+            type: "ai",
+            content: msg.aiResponse || msg.ai_response,
+          },
         ])
         .flat();
 
-      setChatId(detail.session_id || selected.session_id);
-      setChatTitle(detail.title || selected.title || "历史对话");
+      console.log("[Chat] 加载的历史消息数:", loadedMessages.length);
+      console.log(
+        "[Chat] 加载的消息详情:",
+        loadedMessages.map((m) => ({
+          type: m.type,
+          content: m.content?.substring(0, 30),
+        })),
+      );
+
+      // Protobuf 解码后是驼峰命名
+      const newChatId =
+        detail.sessionId || detail.session_id || selectedSessionId;
+      const newTitle = detail.title || selected.title || "历史对话";
+      console.log("[Chat] 解析后的新chatId:", newChatId, "新标题:", newTitle);
+
+      setChatId(newChatId);
+      setChatTitle(newTitle);
       setMessages(
         loadedMessages.length
           ? loadedMessages
@@ -406,10 +585,23 @@ export default function Chat() {
               },
             ],
       );
+
+      console.log(
+        "[Chat] 历史对话加载完成，chatId:",
+        newChatId,
+        "标题:",
+        newTitle,
+      );
     } catch (error) {
       Taro.hideLoading();
-      if (error?.errMsg && /cancel/i.test(error.errMsg)) return;
-      console.error("open history failed:", error);
+      console.error("[Chat] ====== 获取历史记录出错 ======");
+      console.error("[Chat] 错误详情:", error);
+
+      if (error?.errMsg && /cancel/i.test(error.errMsg)) {
+        console.log("[Chat] 用户取消了选择");
+        return;
+      }
+
       Taro.showToast({ title: "历史记录加载失败", icon: "none" });
     }
   };
@@ -434,6 +626,10 @@ export default function Chat() {
           </View>
         </View>
         <View className="toolbar-right">
+          <View className="toolbar-btn" onClick={handleNewChat}>
+            <AddOutlined className="toolbar-btn-icon" />
+            <Text className="toolbar-btn-text">新对话</Text>
+          </View>
           <View className="toolbar-btn" onClick={handleFontSizeChange}>
             <FontOutlined className="toolbar-btn-icon" />
             <Text className="toolbar-btn-text">{currentFontSize?.label}</Text>
@@ -492,13 +688,11 @@ export default function Chat() {
                         <SmileOutlined className="avatar-icon" />
                       </View>
                       <View className="message-bubble ai-message">
-                        <Text
-                          className="message-text"
-                          style={{ fontSize: currentFontSize?.size }}
-                          selectable
-                        >
-                          {msg.content}
-                        </Text>
+                        <View className={`message-markdown font-${fontSize}`}>
+                          <RichText
+                            nodes={renderMarkdownToHtml(msg.content || "")}
+                          />
+                        </View>
                       </View>
                     </>
                   ) : (
